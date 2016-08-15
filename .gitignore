@@ -1,0 +1,7 @@
+.idea/
+.tup/
+build/
+lib/
+*~
+a.out
+

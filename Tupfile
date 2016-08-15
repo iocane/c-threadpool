@@ -1,0 +1,12 @@
+CC = cc
+LN = gcc
+
+# Build the static and shared libraries
+src = threadpool.c
+obj = build/threadpool.o build/cpucount.o
+lib = lib/libthreadpool
+
+: cpucount_@(PLATFORM).c |> ^ CC %f^ $(CC) -fPIC -c %f -o %o |> build/cpucount.o
+: $(src) |> ^ CC %f^ $(CC) -fPIC -c %f -o %o |> build/%B.o
+: $(obj) |> ^ AR %f^ ar rcs %o %f |> $(lib).a
+: $(obj) |> ^ LN %f^ $(LN) -shared -o %o %f |> $(lib).so
