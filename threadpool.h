@@ -1,8 +1,5 @@
 /* 
  * Copyright (C) 2016 Thomas Costigliola
- * 
- * Proprietary and confidential, copying is strictly prohibited.
- * 
  */
 
 #include <pthread.h>
