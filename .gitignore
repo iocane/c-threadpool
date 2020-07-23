@@ -3,5 +3,4 @@
 build/
 lib/
 *~
-a.out
-
+test/test

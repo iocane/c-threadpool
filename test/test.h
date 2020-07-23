@@ -4,14 +4,9 @@ struct timespec timespec_diff(struct timespec start, struct timespec end);
 
 /* Worker arguments and functions */
 
-struct workd1 {
+struct work_data {
   int n;  /* count  */
   int *a; /* array  */
   int r;  /* result */
 };
-void * workfn1(struct workd1 *w, int id);
-
-struct workd2 {
-  
-};
-void * workfn2(struct workd2 *w, int id);
+void * sum_work_values(struct work_data *w);

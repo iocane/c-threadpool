@@ -10,3 +10,9 @@ lib = lib/libthreadpool
 : $(src) |> ^ CC %f^ $(CC) -fPIC -c %f -o %o |> build/%B.o
 : $(obj) |> ^ AR %f^ ar rcs %o %f |> $(lib).a
 : $(obj) |> ^ LN %f^ $(LN) -shared -o %o %f |> $(lib).so
+
+# Building the test executable
+test_src = test/test.c test/util.c test/work.c lib/libthreadpool.a
+test_bin = test/test
+
+: $(test_src) |> $(CC) %f -Llib -static -lthreadpool -pthread -o %o |> $(test_bin)
