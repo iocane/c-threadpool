@@ -28,9 +28,9 @@ struct threadpool_worker_node {
 
 /* Threadpool object */
 struct threadpool {
-  int queuesize;    /* Maximum number of queued jobs    */
-  int queuecount;   /* Current number of queued jobs    */
-  int threadcount;  /* Number of active worker threads  */
+  int queue_size;    /* Maximum number of queued jobs    */
+  int queue_count;   /* Current number of queued jobs    */
+  int thread_count;  /* Number of active worker threads  */
 
   /* This semaphore has 1 slot for each slot in the queue. When the
      semaphore hits 0 we know the queue is full, further queueing must
@@ -57,10 +57,10 @@ void * threadpool_worker(void *node);
 /* Threadpool API *********************************************************/
 /**************************************************************************/
 
- /* threadpool_new: create a new threadpool object with 'threadcount' number
-  * of OS worker threads and 'queuesize; maximum number of queued jobs.
+ /* threadpool_new: create a new threadpool object with 'thread_count' number
+  * of OS worker threads and 'queue_size; maximum number of queued jobs.
   */
-struct threadpool * threadpool_new(int threadcount, int queuesize);
+struct threadpool * threadpool_new(int thread_count, int queue_size);
 
 /* threadpool_delete: safely destroy a threadpool object and free its 
  * resources. Waits for existing jobs to finish.
@@ -79,8 +79,7 @@ int threadpool_queue(struct threadpool *p, workfunc func, void *arg);
  */
 int threadpool_queue_wait(struct threadpool *p, workfunc func, void *arg);
 
-/* NOT IMPLEMENTED */
-/* int threadpool_clear_queue(struct threadpool *p); */
+int threadpool_clear_queue(struct threadpool *p);
 
 /* threadpool_join: block the calling thread until all running jobs complete */
 int threadpool_join(struct threadpool *p);

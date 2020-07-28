@@ -6,18 +6,18 @@
 #include <stdbool.h>
 #include "threadpool.h"
 
-struct threadpool * threadpool_new(int threadcount, int queuesize) {
-  if(threadcount < 1 || queuesize < 1 || queuesize < threadcount) {
+struct threadpool * threadpool_new(int thread_count, int queue_size) {
+  if(thread_count < 1 || queue_size < 1 || queue_size < thread_count) {
     /* Do not allow empty pools and queues smaller than the number of threads */
     return NULL;
   }
 
   struct threadpool *p = (struct threadpool *)calloc(1, sizeof(struct threadpool));
-  p->threadcount = threadcount;
-  p->queuesize = queuesize;
-  p->queuecount = 0;
+  p->thread_count = thread_count;
+  p->queue_size = queue_size;
+  p->queue_count = 0;
   
-  sem_init(&p->queuesem, 0, p->queuesize);
+  sem_init(&p->queuesem, 0, p->queue_size);
   sem_init(&p->joinsem, 0, 1);
 
   pthread_mutex_init(&p->jobsmtx, NULL);
@@ -33,7 +33,7 @@ struct threadpool * threadpool_new(int threadcount, int queuesize) {
   
   // create additional worker thread nodes
   struct threadpool_worker_node *w;
-  for(int i = 1; i < threadcount; i++) {
+  for(int i = 1; i < thread_count; i++) {
     w = (struct threadpool_worker_node *)calloc(1, sizeof(struct threadpool_worker_node));
     w->pool = p;
     w->next = p->wn->next;
@@ -51,7 +51,7 @@ struct threadpool * threadpool_new(int threadcount, int queuesize) {
   
   // create additional job nodes
   struct threadpool_job_node *j;
-  for(int i = 1; i < queuesize; i++) {
+  for(int i = 1; i < queue_size; i++) {
     j = (struct threadpool_job_node *)calloc(1, sizeof(struct threadpool_job_node));
     j->func = NULL;
     j->arg = NULL;
@@ -67,19 +67,19 @@ void threadpool_delete(struct threadpool *p) {
   struct threadpool_worker_node *w;
     
   // post a null job for each worker
-  for(int i = 0; i < p->threadcount; i++) {
+  for(int i = 0; i < p->thread_count; i++) {
     threadpool_queue_wait(p, NULL, NULL);
   }
   
   // wait for all workers to terminate
-  for(int i = 0; i < p->threadcount; i++) {
+  for(int i = 0; i < p->thread_count; i++) {
     pthread_join(p->wn->thread, NULL);
     p->wn = p->wn->next;
   }
   
   // free the job nodes
   j = p->jt;
-  for(int i = 0; i < p->queuesize; i++) {
+  for(int i = 0; i < p->queue_size; i++) {
     j = j->next;
     free(p->jt);
     p->jt = j;
@@ -87,7 +87,7 @@ void threadpool_delete(struct threadpool *p) {
   
   // free the worker thread nodes
   w = p->wn;
-  for(int i = 0; i < p->threadcount; i++) {
+  for(int i = 0; i < p->thread_count; i++) {
     w = w->next;
     sem_destroy(&p->wn->sem);
     free(p->wn);
@@ -139,8 +139,8 @@ void * threadpool_worker(void *node) {
     }
     
     pthread_mutex_lock(&p->jobsmtx);
-    p->queuecount--;
-    if(p->queuecount == 0) {
+    p->queue_count--;
+    if(p->queue_count == 0) {
       /* Wakeup a waiting join operation */
       sem_post(&p->joinsem);
     }
@@ -163,12 +163,12 @@ int threadpool_queue(struct threadpool *p, workfunc func, void *arg) {
   /* We know this won't block since we verified there are slots in the
      queue */
   sem_wait(&p->queuesem);
-  if(p->queuecount == 0) {
+  if(p->queue_count == 0) {
     /* The queue was empty, make sure joins block now until it becomes
        empty again */
     sem_wait(&p->joinsem);
   }
-  p->queuecount++;
+  p->queue_count++;
   p->jn->func = func;
   p->jn->arg = arg;
   p->jn = p->jn->next;
@@ -188,12 +188,12 @@ int threadpool_queue_wait(struct threadpool *p, workfunc func, void *arg) {
   
   /* Wait for the job queue to be writeable */
   pthread_mutex_lock(&p->jobsmtx);
-  if(p->queuecount == 0) {
+  if(p->queue_count == 0) {
     /* The queue was empty, make sure joins block now until it becomes
        empty again */
     sem_wait(&p->joinsem);
   }
-  p->queuecount++;
+  p->queue_count++;
   p->jn->func = func;
   p->jn->arg = arg;
   p->jn = p->jn->next;
@@ -211,4 +211,8 @@ int threadpool_join(struct threadpool *p) {
   sem_wait(&p->joinsem);
   sem_post(&p->joinsem);
   return 0;
+}
+
+int threadpool_clear_queue(struct threadpool *p) {
+
 }
